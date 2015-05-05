@@ -13,7 +13,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Scanner;
 
-
 public class Main {
 
 	public static void main(String[] args) {
@@ -26,82 +25,103 @@ public class Main {
 		}
 		Enumeration<InetAddress> enumDirs = interfaz.getInetAddresses();
 		String IP = null, IPt = null;
-		while(enumDirs.hasMoreElements()){
+		while (enumDirs.hasMoreElements()) {
 			IPt = enumDirs.nextElement().getHostAddress();
-			if(IPt.startsWith("192")){
-				IP=IPt;
+			if (IPt.startsWith("10")) {
+				IP = IPt;
 			}
 		}
-		String nombreFich="ripconf-" + IP + ".txt";
+		String nombreFich = "ripconf-" + IP + ".txt";
 		Scanner lectura = null;
 		try {
-			lectura= new Scanner(new FileInputStream(nombreFich));
+			lectura = new Scanner(new FileInputStream(nombreFich));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
 		ArrayList<Router> listaConf = new ArrayList<Router>();
-		while(lectura.hasNext()){
-			String linea=lectura.next();
+		while (lectura.hasNext()) {
+			String linea = lectura.next();
 			String[] separadas = linea.split("/");
-			if(separadas.length==2){
-				listaConf.add(new Router(separadas[0], 1, IP, Integer.parseInt(separadas[1])));
-			}else{
+			if (separadas.length == 2) {
+				listaConf.add(new Router(separadas[0], 1, IP, Integer
+						.parseInt(separadas[1])));
+			} else {
 				listaConf.add(new Router(separadas[0], 1, IP, 0));
 			}
 		}
 		lectura.close();
-		
 
 		ServerSocket socket_servidor = null;
 		Socket socket_conexion;
-		boolean corriendo=true;
-		
-		while(corriendo){
-			
+		boolean corriendo = true;
+
+		while (corriendo) {
+
 			try {
 				socket_servidor = new ServerSocket(50);
 				socket_conexion = new Socket();
 				socket_conexion = socket_servidor.accept();
-				ObjectOutputStream salida = new ObjectOutputStream(socket_conexion.getOutputStream());
+				ObjectOutputStream salida = new ObjectOutputStream(
+						socket_conexion.getOutputStream());
 				salida.writeObject(listaConf);
 				salida.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		
+
 			Iterator<Router> iterador = listaConf.iterator();
-			while(iterador.hasNext()){
+			while (iterador.hasNext()) {
 				try {
-					socket_conexion = new Socket(iterador.next().getDestino(), 50);
-					ObjectInputStream entrada = new ObjectInputStream(socket_conexion.getInputStream());
+					socket_conexion = new Socket(iterador.next().getDestino(),
+							50);
+					ObjectInputStream entrada = new ObjectInputStream(
+							socket_conexion.getInputStream());
 					Object listaObject = entrada.readObject();
+					@SuppressWarnings("unchecked")
 					ArrayList<Router> listaVecino = (ArrayList<Router>) listaObject;
-					
-					//Aqui habria que chequear la tabla recibida...
-					
+
+					Iterator<Router> itVecinos = listaVecino.iterator();
+					while (itVecinos.hasNext()) {
+						boolean iguales = false;
+						Router vecino = itVecinos.next();
+						Iterator<Router> itConf = listaConf.iterator();
+						while (itConf.hasNext()) {
+							Router elemento = itConf.next();
+							if (elemento.getDestino().equals(
+									vecino.getDestino())) {
+								iguales = true;
+							} else if (iguales
+									&& elemento.getDistancia() < vecino
+											.getDistancia()) {
+								elemento.setDistancia(vecino.getDistancia());
+							}
+							if (!iguales) {
+								listaConf.add(vecino);
+							}
+
+						}
+					}
+
 					entrada.close();
-					
-					
+
 				} catch (IOException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
 			}
-			
-			//Imprimir mi tabla aqui
+
+			Iterator<Router> itImprimir = listaConf.iterator();
+			while(itImprimir.hasNext()){
+				System.out.println(itImprimir.next().toString());
+			}
 			
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			
-			
-			
+
 		}
-		
-		
-		
+
 	}
-	
 
 }
