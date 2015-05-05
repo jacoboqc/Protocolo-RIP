@@ -13,7 +13,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Scanner;
 
-public class Main {
+public class Rip {
 
 	public static void main(String[] args) {
 
