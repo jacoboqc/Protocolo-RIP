@@ -1,6 +1,7 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -50,7 +51,6 @@ public class Main {
 		}
 		lectura.close();
 		
-		//Iterator<Router> iterador = listaConf.iterator();
 
 		ServerSocket socket_servidor = null;
 		Socket socket_conexion;
@@ -59,16 +59,41 @@ public class Main {
 		while(corriendo){
 			
 			try {
-				socket_servidor = new ServerSocket();
+				socket_servidor = new ServerSocket(50);
 				socket_conexion = new Socket();
 				socket_conexion = socket_servidor.accept();
 				ObjectOutputStream salida = new ObjectOutputStream(socket_conexion.getOutputStream());
 				salida.writeObject(listaConf);
+				salida.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		
+			Iterator<Router> iterador = listaConf.iterator();
+			while(iterador.hasNext()){
+				try {
+					socket_conexion = new Socket(iterador.next().getDestino(), 50);
+					ObjectInputStream entrada = new ObjectInputStream(socket_conexion.getInputStream());
+					Object listaObject = entrada.readObject();
+					ArrayList<Router> listaVecino = (ArrayList<Router>) listaObject;
+					
+					//Aqui habria que chequear la tabla recibida...
+					
+					entrada.close();
+					
+					
+				} catch (IOException | ClassNotFoundException e) {
+					e.printStackTrace();
+				}
+			}
 			
+			//Imprimir mi tabla aqui
+			
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			
 			
 			
