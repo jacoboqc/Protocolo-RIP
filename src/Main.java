@@ -3,7 +3,6 @@ import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Scanner;
@@ -34,10 +33,19 @@ public class Main {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		ArrayList<String> listaConf = new ArrayList<String>();
+		ArrayList<Router> listaConf = new ArrayList<Router>();
 		while(lectura.hasNext()){
-			listaConf.add(lectura.next());
+			String linea=lectura.next();
+			String[] separadas = linea.split("/");
+			if(separadas.length==2){
+				listaConf.add(new Router(separadas[0], 1, separadas[0], Integer.parseInt(separadas[1])));
+			}else{
+				listaConf.add(new Router(separadas[0], 1, separadas[0], 0));
+			}
 		}
+		
+		
+		
 		
 	}
 	

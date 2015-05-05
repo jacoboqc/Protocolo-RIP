@@ -1,19 +1,21 @@
 
 public class Router {
 
-	private String distancia;
+	private int distancia;
 	private String destino;
 	private String ruta;
+	private int prefijo;
 	
-	public Router(String destino, String distancia, String ruta){ 
+	public Router(String destino, int distancia, String ruta, int prefijo){ 
 		this.distancia = distancia;
 		this.destino=destino;
 		this.ruta=ruta;
+		this.prefijo=prefijo;
 	}
 	
 	
 	
-	public String getDistancia(){
+	public int getDistancia(){
 		return this.distancia;
 	}
 	public String getDestino(){
@@ -22,20 +24,22 @@ public class Router {
 	public String getRuta(){
 		return this.ruta;
 	}
-	
-	public void setDistancia(String distancia){
-		 this.distancia= distancia;
+
+	public int getPrefijo() {
+		return prefijo;
 	}
 	
 	public void setDistancia(int distancia){
-		 this.distancia= Integer.toString(distancia);
+		 this.distancia= distancia;
 	}
-	
 	
 	public void setDestino(String destino){
 		 this.destino= destino;
 	}
 	public void setRuta(String ruta){
 			this.ruta=ruta;
+	}
+	public void setPrefijo(int prefijo) {
+		this.prefijo = prefijo;
 	}
 }
