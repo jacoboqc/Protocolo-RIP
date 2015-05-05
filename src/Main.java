@@ -1,10 +1,15 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.Scanner;
 
 
@@ -38,12 +43,36 @@ public class Main {
 			String linea=lectura.next();
 			String[] separadas = linea.split("/");
 			if(separadas.length==2){
-				listaConf.add(new Router(separadas[0], 1, separadas[0], Integer.parseInt(separadas[1])));
+				listaConf.add(new Router(separadas[0], 1, IP, Integer.parseInt(separadas[1])));
 			}else{
-				listaConf.add(new Router(separadas[0], 1, separadas[0], 0));
+				listaConf.add(new Router(separadas[0], 1, IP, 0));
 			}
 		}
+		lectura.close();
 		
+		//Iterator<Router> iterador = listaConf.iterator();
+
+		ServerSocket socket_servidor = null;
+		Socket socket_conexion;
+		boolean corriendo=true;
+		
+		while(corriendo){
+			
+			try {
+				socket_servidor = new ServerSocket();
+				socket_conexion = new Socket();
+				socket_conexion = socket_servidor.accept();
+				ObjectOutputStream salida = new ObjectOutputStream(socket_conexion.getOutputStream());
+				salida.writeObject(listaConf);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		
+			
+			
+			
+			
+		}
 		
 		
 		
