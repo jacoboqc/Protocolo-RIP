@@ -27,7 +27,7 @@ public class Rip {
 		String IP = null, IPt = null;
 		while (enumDirs.hasMoreElements()) {
 			IPt = enumDirs.nextElement().getHostAddress();
-			if (IPt.startsWith("10")) {
+			if (IPt.startsWith("192")) {
 				IP = IPt;
 			}
 		}
@@ -52,68 +52,69 @@ public class Rip {
 		lectura.close();
 
 		ServerSocket socket_servidor = null;
-		Socket socket_conexion;
+		Socket socket_conexion = null;
 		boolean corriendo = true;
 
 		while (corriendo) {
-
-			try {
-				socket_servidor = new ServerSocket(50);
-				socket_conexion = new Socket();
-				socket_conexion = socket_servidor.accept();
-				ObjectOutputStream salida = new ObjectOutputStream(
-						socket_conexion.getOutputStream());
-				salida.writeObject(listaConf);
-				salida.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 
 			Iterator<Router> iterador = listaConf.iterator();
 			while (iterador.hasNext()) {
 				try {
 					socket_conexion = new Socket(iterador.next().getDestino(),
-							50);
-					ObjectInputStream entrada = new ObjectInputStream(
-							socket_conexion.getInputStream());
-					Object listaObject = entrada.readObject();
-					@SuppressWarnings("unchecked")
-					ArrayList<Router> listaVecino = (ArrayList<Router>) listaObject;
-
-					Iterator<Router> itVecinos = listaVecino.iterator();
-					while (itVecinos.hasNext()) {
-						boolean iguales = false;
-						Router vecino = itVecinos.next();
-						Iterator<Router> itConf = listaConf.iterator();
-						while (itConf.hasNext()) {
-							Router elemento = itConf.next();
-							if (elemento.getDestino().equals(
-									vecino.getDestino())) {
-								iguales = true;
-							} else if (iguales
-									&& elemento.getDistancia() < vecino
-											.getDistancia()) {
-								elemento.setDistancia(vecino.getDistancia());
-							}
-							if (!iguales) {
-								listaConf.add(vecino);
-							}
-
-						}
-					}
-
-					entrada.close();
-
-				} catch (IOException | ClassNotFoundException e) {
+							5000);
+					
+					ObjectOutputStream salida = new ObjectOutputStream(
+							socket_conexion.getOutputStream());
+					salida.writeObject(listaConf);
+					salida.close();
+				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
+			
+			try {
+				socket_servidor = new ServerSocket(5000);
+				socket_conexion = new Socket();
+				socket_conexion = socket_servidor.accept();
+				ObjectInputStream entrada = new ObjectInputStream(
+						socket_conexion.getInputStream());
+				Object listaObject = entrada.readObject();
+				@SuppressWarnings("unchecked")
+				ArrayList<Router> listaVecino = (ArrayList<Router>) listaObject;
+
+				Iterator<Router> itVecinos = listaVecino.iterator();
+				while (itVecinos.hasNext()) {
+					boolean iguales = false;
+					Router vecino = itVecinos.next();
+					Iterator<Router> itConf = listaConf.iterator();
+					while (itConf.hasNext()) {
+						Router elemento = itConf.next();
+						if (elemento.getDestino().equals(
+								vecino.getDestino())) {
+							iguales = true;
+						} else if (iguales
+								&& elemento.getDistancia() < vecino
+										.getDistancia()) {
+							elemento.setDistancia(vecino.getDistancia());
+						}
+						if (!iguales) {
+							listaConf.add(vecino);
+						}
+
+					}
+				}
+				entrada.close();
+				socket_conexion.close();
+
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
+			}
 
 			Iterator<Router> itImprimir = listaConf.iterator();
-			while(itImprimir.hasNext()){
+			while (itImprimir.hasNext()) {
 				System.out.println(itImprimir.next().toString());
 			}
-			
+
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
