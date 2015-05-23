@@ -17,9 +17,14 @@ public class Rip {
 
 	public static void main(String[] args) {
 
+		String nombItfaz = "wlan0";
+		
+		System.out.println("Inicializando protocolo RIP...");
+		System.out.print("Obteniendo dirección IPv4 desde la interfaz " + nombItfaz + "...");
+		
 		NetworkInterface interfaz = null;
 		try {
-			interfaz = NetworkInterface.getByName("wlan0");
+			interfaz = NetworkInterface.getByName(nombItfaz);
 		} catch (SocketException e1) {
 			e1.printStackTrace();
 		}
@@ -31,7 +36,12 @@ public class Rip {
 				IP = IPt;
 			}
 		}
+		
+		System.out.println(" Hecho.");
+		
 		String nombreFich = "ripconf-" + IP + ".txt";
+		System.out.print("Leyendo fichero de configuración " + nombreFich + "...");	
+
 		Scanner lectura = null;
 		try {
 			lectura = new Scanner(new FileInputStream(nombreFich));
@@ -50,7 +60,15 @@ public class Rip {
 			}
 		}
 		lectura.close();
-
+		
+		System.out.println(" Hecho.");
+		System.out.println("Conectando y actualizando vector de distancias.");
+		System.out.println("\nDestino - Next-hop - Distancia");
+		Iterator<Router> itImprimir = listaConf.iterator();
+		while (itImprimir.hasNext()) {
+			System.out.println(itImprimir.next().toString());
+		}
+		
 		boolean corriendo = true;
 		while (corriendo) {
 			Iterator<Router> iterador = listaConf.iterator();
@@ -133,11 +151,11 @@ public class Rip {
 				e.printStackTrace();
 			}
 
-			Iterator<Router> itImprimir = listaConf.iterator();
-			while (itImprimir.hasNext()) {
-				System.out.println(itImprimir.next().toString());
-			}
 			System.out.println();
+			Iterator<Router> itImprimirr = listaConf.iterator();
+			while (itImprimirr.hasNext()) {
+				System.out.println(itImprimirr.next().toString());
+			}
 
 		}
 
