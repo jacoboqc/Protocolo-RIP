@@ -18,6 +18,13 @@ public class Rip {
 	public static void main(String[] args) {
 
 		String nombItfaz = "wlan0";
+		String password = null;
+		try{
+			password = args[0] + ";";
+		} catch (ArrayIndexOutOfBoundsException e){
+			System.out.println("Argumentos faltantes: indique password.");
+			System.exit(1);
+		}
 
 		System.out.println("Inicializando protocolo RIP...");
 		System.out.print("Obteniendo dirección IPv4 desde la interfaz "
@@ -86,7 +93,7 @@ public class Rip {
 					Router vecino = iterador.next();
 					InetAddress IPvecino = InetAddress.getByName(vecino
 							.getDestino());
-					byte[] toByte = listaConf.toString().getBytes();
+					byte[] toByte = password.concat(listaConf.toString()).getBytes();
 					DatagramPacket DatagramaEnviar = new DatagramPacket(toByte,
 							toByte.length, IPvecino, 5000);
 					socketUDP.send(DatagramaEnviar);
@@ -104,12 +111,18 @@ public class Rip {
 						buf.length);
 				Date horaInicio = new Date();
 				socketServidor.setSoTimeout(10000);
-				while (recibiendo) {
+				recibiendo: while (recibiendo) {
 					socketServidor.receive(DatagramaRecibir);
 					String IPrecibida = DatagramaRecibir.getAddress().toString().substring(1);
 					String recibido = new String(DatagramaRecibir.getData());
-					String recibidoSub = recibido.substring(1).split("]")[0];
-					String[] arrayRecibido = recibidoSub.split(", ");
+					String[] recibidoSub = recibido.split(";");
+					String passRecib = recibidoSub[0];
+					if (!passRecib.equals(args[0])){
+						System.out.println("La contraseña de la trama recibida es incorrecta");
+						break recibiendo;
+					}
+					String recibidoLista = recibidoSub[1].substring(1).split("]")[0];
+					String[] arrayRecibido = recibidoLista.split(", ");
 					for (int i = 0; i < arrayRecibido.length; i++) {
 						String[] vecinoString = arrayRecibido[i].split(" - ");
 						listaRecib
