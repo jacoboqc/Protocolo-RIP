@@ -18,10 +18,11 @@ public class Rip {
 	public static void main(String[] args) {
 
 		String nombItfaz = "wlan0";
-		
+
 		System.out.println("Inicializando protocolo RIP...");
-		System.out.print("Obteniendo dirección IPv4 desde la interfaz " + nombItfaz + "...");
-		
+		System.out.print("Obteniendo dirección IPv4 desde la interfaz "
+				+ nombItfaz + "...");
+
 		NetworkInterface interfaz = null;
 		try {
 			interfaz = NetworkInterface.getByName(nombItfaz);
@@ -36,11 +37,12 @@ public class Rip {
 				IP = IPt;
 			}
 		}
-		
+
 		System.out.println(" Hecho.");
-		
+
 		String nombreFich = "ripconf-" + IP + ".txt";
-		System.out.print("Leyendo fichero de configuración " + nombreFich + "...");	
+		System.out.print("Leyendo fichero de configuración " + nombreFich
+				+ "...");
 
 		Scanner lectura = null;
 		try {
@@ -60,15 +62,21 @@ public class Rip {
 			}
 		}
 		lectura.close();
-		
+
 		System.out.println(" Hecho.");
 		System.out.println("Conectando y actualizando vector de distancias.");
 		System.out.println("\nDestino - Next-hop - Distancia");
+		DatagramSocket socketServidor = null;
+		try {
+			socketServidor = new DatagramSocket(5000);
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		}
 		Iterator<Router> itImprimir = listaConf.iterator();
 		while (itImprimir.hasNext()) {
 			System.out.println(itImprimir.next().toString());
 		}
-		
+
 		boolean corriendo = true;
 		while (corriendo) {
 			Iterator<Router> iterador = listaConf.iterator();
@@ -90,16 +98,15 @@ public class Rip {
 
 			boolean recibiendo = true;
 			ArrayList<Router> listaRecib = new ArrayList<Router>();
-			DatagramSocket socketUDP = null;
 			try {
-				socketUDP = new DatagramSocket(5000);
 				byte[] buf = new byte[1000];
 				DatagramPacket DatagramaRecibir = new DatagramPacket(buf,
 						buf.length);
 				Date horaInicio = new Date();
-				socketUDP.setSoTimeout(10000);
+				socketServidor.setSoTimeout(10000);
 				while (recibiendo) {
-					socketUDP.receive(DatagramaRecibir);
+					socketServidor.receive(DatagramaRecibir);
+					String IPrecibida = DatagramaRecibir.getAddress().toString().substring(1);
 					String recibido = new String(DatagramaRecibir.getData());
 					String recibidoSub = recibido.substring(1).split("]")[0];
 					String[] arrayRecibido = recibidoSub.split(", ");
@@ -114,39 +121,40 @@ public class Rip {
 					Iterator<Router> itRecibida = listaRecib.iterator();
 					ArrayList<Router> aAñadir = new ArrayList<Router>();
 					while (itRecibida.hasNext()) {
-						boolean iguales = false;
 						Router vecino = itRecibida.next();
-						Iterator<Router> itConf = listaConf.iterator();
-						while (itConf.hasNext()) {
-							Router elemento = itConf.next();
-							if (elemento.getDestino().equals(
-									vecino.getDestino())) {
-								iguales = true;
+						boolean conocido = false;
+						if (vecino.getDestino().equals(IP)) {
+						}else {
+							int nuevaDistancia = vecino.getDistancia()+1;
+							Iterator<Router> itConf = listaConf.iterator();
+							while (itConf.hasNext()) {
+								Router elemento = itConf.next();
+								if(elemento.getDestino().equals(vecino.getDestino())){
+									conocido = true;
+									if(nuevaDistancia<elemento.getDistancia()){
+										elemento.setDistancia(nuevaDistancia);
+									}
+								}
 							}
-							if (iguales
-									&& elemento.getDistancia() > vecino
-											.getDistancia()) {
-								elemento.setDistancia(vecino.getDistancia());
-							}
-							if (!iguales) {
-								aAñadir.add(vecino);
+							if(!conocido){
+								vecino.setRuta(IPrecibida);
+								vecino.setDistancia(vecino.getDistancia()+1);
+								listaConf.add(vecino);
 							}
 
 						}
-
+						
 					}
 					Iterator<Router> itAñadir = aAñadir.iterator();
 					while (itAñadir.hasNext()) {
 						listaConf.add(itAñadir.next());
 					}
-					socketUDP
-							.setSoTimeout((int) (10000 - (new Date().getTime() - horaInicio
-									.getTime())));
+					socketServidor.setSoTimeout((int) (10000 - (new Date()
+							.getTime() - horaInicio.getTime())));
 				}
 
 			} catch (SocketTimeoutException e) {
 				recibiendo = false;
-				socketUDP.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
