@@ -1,14 +1,14 @@
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Scanner;
@@ -51,62 +51,85 @@ public class Rip {
 		}
 		lectura.close();
 
-		ServerSocket socket_servidor = null;
-		Socket socket_conexion = null;
 		boolean corriendo = true;
-
 		while (corriendo) {
-
 			Iterator<Router> iterador = listaConf.iterator();
 			while (iterador.hasNext()) {
 				try {
-					socket_conexion = new Socket(iterador.next().getDestino(),
-							5000);
-					
-					ObjectOutputStream salida = new ObjectOutputStream(
-							socket_conexion.getOutputStream());
-					salida.writeObject(listaConf);
-					salida.close();
+					DatagramSocket socketUDP = new DatagramSocket();
+					Router vecino = iterador.next();
+					InetAddress IPvecino = InetAddress.getByName(vecino
+							.getDestino());
+					byte[] toByte = listaConf.toString().getBytes();
+					DatagramPacket DatagramaEnviar = new DatagramPacket(toByte,
+							toByte.length, IPvecino, 5000);
+					socketUDP.send(DatagramaEnviar);
+					socketUDP.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
-			
-			try {
-				socket_servidor = new ServerSocket(5000);
-				socket_conexion = new Socket();
-				socket_conexion = socket_servidor.accept();
-				ObjectInputStream entrada = new ObjectInputStream(
-						socket_conexion.getInputStream());
-				Object listaObject = entrada.readObject();
-				@SuppressWarnings("unchecked")
-				ArrayList<Router> listaVecino = (ArrayList<Router>) listaObject;
 
-				Iterator<Router> itVecinos = listaVecino.iterator();
-				while (itVecinos.hasNext()) {
-					boolean iguales = false;
-					Router vecino = itVecinos.next();
-					Iterator<Router> itConf = listaConf.iterator();
-					while (itConf.hasNext()) {
-						Router elemento = itConf.next();
-						if (elemento.getDestino().equals(
-								vecino.getDestino())) {
-							iguales = true;
-						} else if (iguales
-								&& elemento.getDistancia() < vecino
-										.getDistancia()) {
-							elemento.setDistancia(vecino.getDistancia());
-						}
-						if (!iguales) {
-							listaConf.add(vecino);
+			boolean recibiendo = true;
+			ArrayList<Router> listaRecib = new ArrayList<Router>();
+			DatagramSocket socketUDP = null;
+			try {
+				socketUDP = new DatagramSocket(5000);
+				byte[] buf = new byte[1000];
+				DatagramPacket DatagramaRecibir = new DatagramPacket(buf,
+						buf.length);
+				Date horaInicio = new Date();
+				socketUDP.setSoTimeout(10000);
+				while (recibiendo) {
+					socketUDP.receive(DatagramaRecibir);
+					String recibido = new String(DatagramaRecibir.getData());
+					String recibidoSub = recibido.substring(1).split("]")[0];
+					String[] arrayRecibido = recibidoSub.split(", ");
+					for (int i = 0; i < arrayRecibido.length; i++) {
+						String[] vecinoString = arrayRecibido[i].split(" - ");
+						listaRecib
+								.add(new Router(vecinoString[0], Integer
+										.parseInt(vecinoString[2]),
+										vecinoString[1], 0)); // Cambiar esto
+																// para subredes
+					}
+					Iterator<Router> itRecibida = listaRecib.iterator();
+					ArrayList<Router> aAñadir = new ArrayList<Router>();
+					while (itRecibida.hasNext()) {
+						boolean iguales = false;
+						Router vecino = itRecibida.next();
+						Iterator<Router> itConf = listaConf.iterator();
+						while (itConf.hasNext()) {
+							Router elemento = itConf.next();
+							if (elemento.getDestino().equals(
+									vecino.getDestino())) {
+								iguales = true;
+							}
+							if (iguales
+									&& elemento.getDistancia() > vecino
+											.getDistancia()) {
+								elemento.setDistancia(vecino.getDistancia());
+							}
+							if (!iguales) {
+								aAñadir.add(vecino);
+							}
+
 						}
 
 					}
+					Iterator<Router> itAñadir = aAñadir.iterator();
+					while (itAñadir.hasNext()) {
+						listaConf.add(itAñadir.next());
+					}
+					socketUDP
+							.setSoTimeout((int) (10000 - (new Date().getTime() - horaInicio
+									.getTime())));
 				}
-				entrada.close();
-				socket_conexion.close();
 
-			} catch (IOException | ClassNotFoundException e) {
+			} catch (SocketTimeoutException e) {
+				recibiendo = false;
+				socketUDP.close();
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 
@@ -114,12 +137,7 @@ public class Rip {
 			while (itImprimir.hasNext()) {
 				System.out.println(itImprimir.next().toString());
 			}
-
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			System.out.println();
 
 		}
 

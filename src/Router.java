@@ -1,11 +1,5 @@
-import java.io.Serializable;
+public class Router{
 
-public class Router implements Serializable {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	private int distancia;
 	private String destino;
 	private String ruta;
