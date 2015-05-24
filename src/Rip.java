@@ -93,7 +93,8 @@ public class Rip {
 					Router vecino = iterador.next();
 					InetAddress IPvecino = InetAddress.getByName(vecino
 							.getDestino());
-					byte[] toByte = password.concat(listaConf.toString()).getBytes();
+					ArrayList<Router> listaConfSplit = checkSplitHorizon(listaConf, IPvecino);
+					byte[] toByte = password.concat(listaConfSplit.toString()).getBytes();
 					DatagramPacket DatagramaEnviar = new DatagramPacket(toByte,
 							toByte.length, IPvecino, 5000);
 					socketUDP.send(DatagramaEnviar);
@@ -180,6 +181,18 @@ public class Rip {
 
 		}
 
+	}
+
+	private static ArrayList<Router> checkSplitHorizon(
+			ArrayList<Router> listaConf, InetAddress iPvecino) {
+		Iterator<Router> itConfSplit = listaConf.iterator();
+		while(itConfSplit.hasNext()){
+			Router vecino = itConfSplit.next();
+			if (vecino.getRuta().equals(iPvecino)){
+				itConfSplit.remove();
+			}
+		}
+		return listaConf;
 	}
 
 }
