@@ -86,6 +86,7 @@ public class Rip {
 
 		boolean corriendo = true;
 		boolean primera_iteracion = true;
+		ArrayList<Router> listaEncamin = listaConf;
 		while (corriendo) {
 			Iterator<Router> iterador = listaConf.iterator();
 			while (iterador.hasNext()) {
@@ -101,7 +102,7 @@ public class Rip {
 								.getHostAddress(), 32));
 						primera_iteracion = false;
 					} else {
-						listaConfEnviar = checkSplitHorizon(listaConf, IPvecino);
+						listaConfEnviar = checkSplitHorizon(listaEncamin, IPvecino);
 					}
 					byte[] toByte = password.concat(listaConfEnviar.toString())
 							.getBytes();
@@ -159,7 +160,7 @@ public class Rip {
 						if (vecino.getDestino().equals(IP)) {
 						} else {
 							int nuevaDistancia = vecino.getDistancia() + 1;
-							Iterator<Router> itConf = listaConf.iterator();
+							Iterator<Router> itConf = listaEncamin.iterator();
 							while (itConf.hasNext()) {
 								Router elemento = itConf.next();
 								if (elemento.getDestino().equals(
@@ -179,7 +180,7 @@ public class Rip {
 								} else {
 									vecino.setDistancia(vecino.getDistancia() + 1);
 								}
-								listaConf.add(vecino);
+								listaEncamin.add(vecino);
 							}
 
 						}
@@ -187,7 +188,7 @@ public class Rip {
 					}
 					Iterator<Router> itAñadir = aAñadir.iterator();
 					while (itAñadir.hasNext()) {
-						listaConf.add(itAñadir.next());
+						listaEncamin.add(itAñadir.next());
 					}
 					socketServidor.setSoTimeout((int) (10000 - (new Date()
 							.getTime() - horaInicio.getTime())));
@@ -200,7 +201,7 @@ public class Rip {
 			}
 
 			System.out.println();
-			Iterator<Router> itImprimirr = listaConf.iterator();
+			Iterator<Router> itImprimirr = listaEncamin.iterator();
 			while (itImprimirr.hasNext()) {
 				System.out.println(itImprimirr.next().toString());
 			}
