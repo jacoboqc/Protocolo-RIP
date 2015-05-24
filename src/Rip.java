@@ -86,7 +86,8 @@ public class Rip {
 
 		boolean corriendo = true;
 		boolean primera_iteracion = true;
-		ArrayList<Router> listaEncamin = listaConf;
+		@SuppressWarnings("unchecked")
+		ArrayList<Router> listaEncamin = (ArrayList<Router>) listaConf.clone();
 		while (corriendo) {
 			Iterator<Router> iterador = listaConf.iterator();
 			while (iterador.hasNext()) {
