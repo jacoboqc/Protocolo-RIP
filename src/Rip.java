@@ -19,9 +19,9 @@ public class Rip {
 
 		String nombItfaz = "wlan0";
 		String password = null;
-		try{
+		try {
 			password = args[0] + ";";
-		} catch (ArrayIndexOutOfBoundsException e){
+		} catch (ArrayIndexOutOfBoundsException e) {
 			System.out.println("Argumentos faltantes: indique password.");
 			System.exit(1);
 		}
@@ -85,6 +85,7 @@ public class Rip {
 		}
 
 		boolean corriendo = true;
+		boolean primera_iteracion = true;
 		while (corriendo) {
 			Iterator<Router> iterador = listaConf.iterator();
 			while (iterador.hasNext()) {
@@ -93,8 +94,17 @@ public class Rip {
 					Router vecino = iterador.next();
 					InetAddress IPvecino = InetAddress.getByName(vecino
 							.getDestino());
-					ArrayList<Router> listaConfSplit = checkSplitHorizon(listaConf, IPvecino);
-					byte[] toByte = password.concat(listaConfSplit.toString()).getBytes();
+					ArrayList<Router> listaConfEnviar = new ArrayList<Router>();
+					if (primera_iteracion) {
+						listaConfEnviar = extraerSubredes(listaConf);
+						listaConfEnviar.add(new Router(IP, 1, IPvecino
+								.getHostAddress(), 32));
+						primera_iteracion = false;
+					} else {
+						listaConfEnviar = checkSplitHorizon(listaConf, IPvecino);
+					}
+					byte[] toByte = password.concat(listaConfEnviar.toString())
+							.getBytes();
 					DatagramPacket DatagramaEnviar = new DatagramPacket(toByte,
 							toByte.length, IPvecino, 5000);
 					socketUDP.send(DatagramaEnviar);
@@ -114,23 +124,32 @@ public class Rip {
 				socketServidor.setSoTimeout(10000);
 				recibiendo: while (recibiendo) {
 					socketServidor.receive(DatagramaRecibir);
-					String IPrecibida = DatagramaRecibir.getAddress().toString().substring(1);
+					String IPrecibida = DatagramaRecibir.getAddress()
+							.toString().substring(1);
 					String recibido = new String(DatagramaRecibir.getData());
 					String[] recibidoSub = recibido.split(";");
 					String passRecib = recibidoSub[0];
-					if (!passRecib.equals(args[0])){
-						System.out.println("La contraseña de la trama recibida es incorrecta");
+					if (!passRecib.equals(args[0])) {
+						System.out
+								.println("La contraseña de la trama recibida es incorrecta");
 						break recibiendo;
 					}
-					String recibidoLista = recibidoSub[1].substring(1).split("]")[0];
+					String recibidoLista = recibidoSub[1].substring(1).split(
+							"]")[0];
 					String[] arrayRecibido = recibidoLista.split(", ");
 					for (int i = 0; i < arrayRecibido.length; i++) {
 						String[] vecinoString = arrayRecibido[i].split(" - ");
-						listaRecib
-								.add(new Router(vecinoString[0], Integer
-										.parseInt(vecinoString[2]),
-										vecinoString[1], 0)); // Cambiar esto
-																// para subredes
+						String[] subred = vecinoString[0].split("/");
+						if (subred.length == 2) {
+							listaRecib.add(new Router(subred[0], Integer
+									.parseInt(vecinoString[2]),
+									vecinoString[1], Integer
+											.parseInt(subred[1])));
+						} else {
+							listaRecib.add(new Router(vecinoString[0], Integer
+									.parseInt(vecinoString[2]),
+									vecinoString[1], 0));
+						}
 					}
 					Iterator<Router> itRecibida = listaRecib.iterator();
 					ArrayList<Router> aAñadir = new ArrayList<Router>();
@@ -138,26 +157,33 @@ public class Rip {
 						Router vecino = itRecibida.next();
 						boolean conocido = false;
 						if (vecino.getDestino().equals(IP)) {
-						}else {
-							int nuevaDistancia = vecino.getDistancia()+1;
+						} else {
+							int nuevaDistancia = vecino.getDistancia() + 1;
 							Iterator<Router> itConf = listaConf.iterator();
 							while (itConf.hasNext()) {
 								Router elemento = itConf.next();
-								if(elemento.getDestino().equals(vecino.getDestino())){
+								if (elemento.getDestino().equals(
+										vecino.getDestino())) {
 									conocido = true;
-									if(nuevaDistancia<elemento.getDistancia()){
+									if (nuevaDistancia < elemento
+											.getDistancia()) {
 										elemento.setDistancia(nuevaDistancia);
 									}
 								}
 							}
-							if(!conocido){
+							if (!conocido) {
 								vecino.setRuta(IPrecibida);
-								vecino.setDistancia(vecino.getDistancia()+1);
+								if (vecino.getDestino()
+										.equals(vecino.getRuta())) {
+									vecino.setDistancia(vecino.getDistancia());
+								} else {
+									vecino.setDistancia(vecino.getDistancia() + 1);
+								}
 								listaConf.add(vecino);
 							}
 
 						}
-						
+
 					}
 					Iterator<Router> itAñadir = aAñadir.iterator();
 					while (itAñadir.hasNext()) {
@@ -183,12 +209,24 @@ public class Rip {
 
 	}
 
+	private static ArrayList<Router> extraerSubredes(ArrayList<Router> listaConf) {
+		ArrayList<Router> listaConfEnviar = new ArrayList<Router>();
+		Iterator<Router> itConfSubredes = listaConf.iterator();
+		while (itConfSubredes.hasNext()) {
+			Router vecino = itConfSubredes.next();
+			if (vecino.getDistancia() > 0) {
+				listaConfEnviar.add(vecino);
+			}
+		}
+		return listaConfEnviar;
+	}
+
 	private static ArrayList<Router> checkSplitHorizon(
 			ArrayList<Router> listaConf, InetAddress iPvecino) {
 		Iterator<Router> itConfSplit = listaConf.iterator();
-		while(itConfSplit.hasNext()){
+		while (itConfSplit.hasNext()) {
 			Router vecino = itConfSplit.next();
-			if (vecino.getRuta().equals(iPvecino)){
+			if (vecino.getRuta().equals(iPvecino)) {
 				itConfSplit.remove();
 			}
 		}
